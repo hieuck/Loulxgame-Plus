@@ -6,6 +6,8 @@
 // @author       hieuck
 // @match        https://loulxgame.com/*
 // @grant        none
+// @downloadURL  https://update.greasyfork.org/scripts/512247/Bypass%20DevTools%20Detection%2C%20Unlock%20Functionality%2C%20and%20Auto%20Check-in.user.js
+// @updateURL    https://raw.githubusercontent.com/hieuck/Loulxgame-Plus/refs/heads/main/Loulxgame-Plus.js
 // ==/UserScript==
 
 (function() {
