@@ -28,45 +28,48 @@
         console.log(message); // Hiển thị thông báo trên console
     }
 
-    // Đăng ký menu
-    function registerMenuCommands() {
-        // Xóa các lệnh trước đó
-        GM_unregisterMenuCommand('Toggle DevTools Detection Bypass');
-        GM_unregisterMenuCommand('Toggle Auto Check-in');
-        GM_unregisterMenuCommand('Toggle Right Click');
-        GM_unregisterMenuCommand('Toggle Keyboard Shortcuts');
+    const menu = {
+        ids: [], // Lưu trữ ID của các menu
 
-        // Đăng ký các lệnh với trạng thái hiện tại
-        GM_registerMenuCommand(`${isDevToolsDetectionBypassed ? '✔️' : '❌'} Bật/Tắt Bỏ Qua Phát Hiện DevTools`, () => {
-            isDevToolsDetectionBypassed = !isDevToolsDetectionBypassed;
-            GM_setValue('isDevToolsDetectionBypassed', isDevToolsDetectionBypassed);
-            showNotification(`Bỏ Qua Phát Hiện DevTools đã ${isDevToolsDetectionBypassed ? 'bật' : 'tắt'}`);
-            registerMenuCommands(); // Cập nhật menu
-        });
+        register() {
+            // Xóa các lệnh trước đó
+            this.ids.forEach(id => GM_unregisterMenuCommand(id));
+            this.ids = []; // Đặt lại danh sách ID menu
 
-        GM_registerMenuCommand(`${isAutoCheckInEnabled ? '✔️' : '❌'} Bật/Tắt Tự Động Điểm Danh`, () => {
-            isAutoCheckInEnabled = !isAutoCheckInEnabled;
-            GM_setValue('isAutoCheckInEnabled', isAutoCheckInEnabled);
-            showNotification(`Tự Động Điểm Danh đã ${isAutoCheckInEnabled ? 'bật' : 'tắt'}`);
-            registerMenuCommands(); // Cập nhật menu
-        });
+            // Đăng ký các lệnh với trạng thái hiện tại
+            this.ids.push(GM_registerMenuCommand(`${isDevToolsDetectionBypassed ? '✔️' : '❌'} Bật/Tắt Bỏ Qua Phát Hiện DevTools`, () => {
+                isDevToolsDetectionBypassed = !isDevToolsDetectionBypassed;
+                GM_setValue('isDevToolsDetectionBypassed', isDevToolsDetectionBypassed);
+                showNotification(`Bỏ Qua Phát Hiện DevTools đã ${isDevToolsDetectionBypassed ? 'bật' : 'tắt'}`);
+                this.register(); // Cập nhật menu
+            }));
 
-        GM_registerMenuCommand(`${isRightClickEnabled ? '✔️' : '❌'} Bật/Tắt Chuột Phải`, () => {
-            isRightClickEnabled = !isRightClickEnabled;
-            GM_setValue('isRightClickEnabled', isRightClickEnabled);
-            showNotification(`Chuột Phải đã ${isRightClickEnabled ? 'bật' : 'tắt'}`);
-            registerMenuCommands(); // Cập nhật menu
-        });
+            this.ids.push(GM_registerMenuCommand(`${isAutoCheckInEnabled ? '✔️' : '❌'} Bật/Tắt Tự Động Điểm Danh`, () => {
+                isAutoCheckInEnabled = !isAutoCheckInEnabled;
+                GM_setValue('isAutoCheckInEnabled', isAutoCheckInEnabled);
+                showNotification(`Tự Động Điểm Danh đã ${isAutoCheckInEnabled ? 'bật' : 'tắt'}`);
+                this.register(); // Cập nhật menu
+            }));
 
-        GM_registerMenuCommand(`${isKeyboardShortcutsEnabled ? '✔️' : '❌'} Bật/Tắt Phím Chức Năng`, () => {
-            isKeyboardShortcutsEnabled = !isKeyboardShortcutsEnabled;
-            GM_setValue('isKeyboardShortcutsEnabled', isKeyboardShortcutsEnabled);
-            showNotification(`Phím Chức Năng đã ${isKeyboardShortcutsEnabled ? 'bật' : 'tắt'}`);
-            registerMenuCommands(); // Cập nhật menu
-        });
-    }
+            this.ids.push(GM_registerMenuCommand(`${isRightClickEnabled ? '✔️' : '❌'} Bật/Tắt Chuột Phải`, () => {
+                isRightClickEnabled = !isRightClickEnabled;
+                GM_setValue('isRightClickEnabled', isRightClickEnabled);
+                showNotification(`Chuột Phải đã ${isRightClickEnabled ? 'bật' : 'tắt'}`);
+                this.register(); // Cập nhật menu
+                location.reload();
+            }));
 
-    registerMenuCommands(); // Đăng ký menu ban đầu
+            this.ids.push(GM_registerMenuCommand(`${isKeyboardShortcutsEnabled ? '✔️' : '❌'} Bật/Tắt Phím Chức Năng`, () => {
+                isKeyboardShortcutsEnabled = !isKeyboardShortcutsEnabled;
+                GM_setValue('isKeyboardShortcutsEnabled', isKeyboardShortcutsEnabled);
+                showNotification(`Phím Chức Năng đã ${isKeyboardShortcutsEnabled ? 'bật' : 'tắt'}`);
+                this.register(); // Cập nhật menu
+                location.reload();
+            }));
+        }
+    };
+
+    menu.register(); // Đăng ký menu ban đầu
 
     // Bỏ qua hạn chế chuột phải
     if (isRightClickEnabled) {
