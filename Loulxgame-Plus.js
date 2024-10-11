@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bypass DevTools Detection, Unlock Functionality, and Auto Check-in
 // @namespace    http://tampermonkey.net/
-// @version      1.3
+// @version      1.7
 // @description  Bỏ qua phát hiện DevTools, mở khóa các chức năng và tự động điểm danh trên https://loulxgame.com/
 // @author       hieuck
 // @match        https://loulxgame.com/*
@@ -26,16 +26,10 @@
     // Hàm thông báo
     function showNotification(message) {
         console.log(message); // Hiển thị thông báo trên console
-        alert(message); // Thông báo dạng alert
     }
 
     // Đăng ký menu
     function registerMenuCommands() {
-        const devToolsSymbol = isDevToolsDetectionBypassed ? '✔️' : '❌';
-        const checkInSymbol = isAutoCheckInEnabled ? '✔️' : '❌';
-        const rightClickSymbol = isRightClickEnabled ? '✔️' : '❌';
-        const keyboardShortcutsSymbol = isKeyboardShortcutsEnabled ? '✔️' : '❌';
-
         // Xóa các lệnh trước đó
         GM_unregisterMenuCommand('Toggle DevTools Detection Bypass');
         GM_unregisterMenuCommand('Toggle Auto Check-in');
@@ -43,28 +37,28 @@
         GM_unregisterMenuCommand('Toggle Keyboard Shortcuts');
 
         // Đăng ký các lệnh với trạng thái hiện tại
-        GM_registerMenuCommand(`${devToolsSymbol} Bật/Tắt Bỏ Qua Phát Hiện DevTools`, () => {
+        GM_registerMenuCommand(`${isDevToolsDetectionBypassed ? '✔️' : '❌'} Bật/Tắt Bỏ Qua Phát Hiện DevTools`, () => {
             isDevToolsDetectionBypassed = !isDevToolsDetectionBypassed;
             GM_setValue('isDevToolsDetectionBypassed', isDevToolsDetectionBypassed);
             showNotification(`Bỏ Qua Phát Hiện DevTools đã ${isDevToolsDetectionBypassed ? 'bật' : 'tắt'}`);
             registerMenuCommands(); // Cập nhật menu
         });
 
-        GM_registerMenuCommand(`${checkInSymbol} Bật/Tắt Tự Động Điểm Danh`, () => {
+        GM_registerMenuCommand(`${isAutoCheckInEnabled ? '✔️' : '❌'} Bật/Tắt Tự Động Điểm Danh`, () => {
             isAutoCheckInEnabled = !isAutoCheckInEnabled;
             GM_setValue('isAutoCheckInEnabled', isAutoCheckInEnabled);
             showNotification(`Tự Động Điểm Danh đã ${isAutoCheckInEnabled ? 'bật' : 'tắt'}`);
             registerMenuCommands(); // Cập nhật menu
         });
 
-        GM_registerMenuCommand(`${rightClickSymbol} Bật/Tắt Chuột Phải`, () => {
+        GM_registerMenuCommand(`${isRightClickEnabled ? '✔️' : '❌'} Bật/Tắt Chuột Phải`, () => {
             isRightClickEnabled = !isRightClickEnabled;
             GM_setValue('isRightClickEnabled', isRightClickEnabled);
             showNotification(`Chuột Phải đã ${isRightClickEnabled ? 'bật' : 'tắt'}`);
             registerMenuCommands(); // Cập nhật menu
         });
 
-        GM_registerMenuCommand(`${keyboardShortcutsSymbol} Bật/Tắt Phím Chức Năng`, () => {
+        GM_registerMenuCommand(`${isKeyboardShortcutsEnabled ? '✔️' : '❌'} Bật/Tắt Phím Chức Năng`, () => {
             isKeyboardShortcutsEnabled = !isKeyboardShortcutsEnabled;
             GM_setValue('isKeyboardShortcutsEnabled', isKeyboardShortcutsEnabled);
             showNotification(`Phím Chức Năng đã ${isKeyboardShortcutsEnabled ? 'bật' : 'tắt'}`);
@@ -74,22 +68,60 @@
 
     registerMenuCommands(); // Đăng ký menu ban đầu
 
-    // Mở khóa chuột phải
+    // Bỏ qua hạn chế chuột phải
     if (isRightClickEnabled) {
         document.addEventListener('contextmenu', function(event) {
             event.stopPropagation(); // Ngăn chặn hành động mặc định
         }, true);
     }
 
-    // Mở khóa phím tắt
+    // Bỏ qua hạn chế phím tắt
     if (isKeyboardShortcutsEnabled) {
         document.addEventListener('keydown', function(event) {
-            const allowedKeys = [123, 73, 74, 67, 85, 83, 80, 65, 67, 86]; // F12, Ctrl+Shift+I, Ctrl+Shift+J, ...
-            if (allowedKeys.includes(event.keyCode)) {
-                event.stopPropagation(); // Ngăn chặn hành động mặc định
+            // Danh sách các phím tắt bị vô hiệu hóa
+            const disabledKeys = [
+                { keyCode: 123 }, // F12
+                { ctrlKey: true, shiftKey: true, keyCode: 73 }, // Ctrl+Shift+I
+                { ctrlKey: true, shiftKey: true, keyCode: 74 }, // Ctrl+Shift+J
+                { ctrlKey: true, shiftKey: true, keyCode: 67 }, // Ctrl+Shift+C
+                { ctrlKey: true, keyCode: 85 }, // Ctrl+U
+                { ctrlKey: true, keyCode: 83 }, // Ctrl+S
+                { ctrlKey: true, keyCode: 80 }, // Ctrl+P
+                { ctrlKey: true, keyCode: 65 }, // Ctrl+A
+                { ctrlKey: true, keyCode: 67 }, // Ctrl+C
+                { ctrlKey: true, keyCode: 86 }, // Ctrl+V
+                { ctrlKey: true, shiftKey: true, keyCode: 86 } // Ctrl+Shift+V
+            ];
+
+            // Kiểm tra nếu phím được nhấn là một trong các phím bị vô hiệu hóa
+            for (const key of disabledKeys) {
+                let disable = true;
+                for (const prop in key) {
+                    if (event[prop] !== key[prop]) {
+                        disable = false;
+                        break;
+                    }
+                }
+                if (disable) {
+                    event.stopPropagation(); // Ngăn chặn hành động mặc định
+                    return false; // Ngăn chặn hành động mặc định của trình duyệt
+                }
             }
         }, true);
     }
+
+    // Khôi phục khả năng sao chép, dán và cắt
+    document.addEventListener('copy', event => {
+        event.stopPropagation(); // Ngăn chặn hành động mặc định
+    });
+
+    document.addEventListener('cut', event => {
+        event.stopPropagation(); // Ngăn chặn hành động mặc định
+    });
+
+    document.addEventListener('paste', event => {
+        event.stopPropagation(); // Ngăn chặn hành động mặc định
+    });
 
     // Ghi đè hàm debugger
     if (isDevToolsDetectionBypassed) {
@@ -108,11 +140,7 @@
 
         function loop() {
             const startTime = new Date();
-            if (window._debugger === undefined) {
-                window._debugger = function() {};
-            }
-
-            window._debugger(); // Gọi hàm giả mạo
+            debugger; // Triggers if dev tools are opened
 
             if (new Date() - startTime > timeLimit) {
                 if (!open) {
