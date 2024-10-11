@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bypass DevTools Detection, Unlock Functionality, and Auto Check-in
 // @namespace    http://tampermonkey.net/
-// @version      1.2
+// @version      1.3
 // @description  Bỏ qua phát hiện DevTools, mở khóa các chức năng và tự động điểm danh trên https://loulxgame.com/
 // @author       hieuck
 // @match        https://loulxgame.com/*
@@ -20,6 +20,8 @@
     // Toggle states
     let isDevToolsDetectionBypassed = GM_getValue('isDevToolsDetectionBypassed', true);
     let isAutoCheckInEnabled = GM_getValue('isAutoCheckInEnabled', true);
+    let isRightClickEnabled = GM_getValue('isRightClickEnabled', true);
+    let isKeyboardShortcutsEnabled = GM_getValue('isKeyboardShortcutsEnabled', true);
 
     // Hàm thông báo
     function showNotification(message) {
@@ -31,10 +33,14 @@
     function registerMenuCommands() {
         const devToolsSymbol = isDevToolsDetectionBypassed ? '✔️' : '❌';
         const checkInSymbol = isAutoCheckInEnabled ? '✔️' : '❌';
+        const rightClickSymbol = isRightClickEnabled ? '✔️' : '❌';
+        const keyboardShortcutsSymbol = isKeyboardShortcutsEnabled ? '✔️' : '❌';
 
         // Xóa các lệnh trước đó
         GM_unregisterMenuCommand('Toggle DevTools Detection Bypass');
         GM_unregisterMenuCommand('Toggle Auto Check-in');
+        GM_unregisterMenuCommand('Toggle Right Click');
+        GM_unregisterMenuCommand('Toggle Keyboard Shortcuts');
 
         // Đăng ký các lệnh với trạng thái hiện tại
         GM_registerMenuCommand(`${devToolsSymbol} Bật/Tắt Bỏ Qua Phát Hiện DevTools`, () => {
@@ -50,19 +56,33 @@
             showNotification(`Tự Động Điểm Danh đã ${isAutoCheckInEnabled ? 'bật' : 'tắt'}`);
             registerMenuCommands(); // Cập nhật menu
         });
+
+        GM_registerMenuCommand(`${rightClickSymbol} Bật/Tắt Chuột Phải`, () => {
+            isRightClickEnabled = !isRightClickEnabled;
+            GM_setValue('isRightClickEnabled', isRightClickEnabled);
+            showNotification(`Chuột Phải đã ${isRightClickEnabled ? 'bật' : 'tắt'}`);
+            registerMenuCommands(); // Cập nhật menu
+        });
+
+        GM_registerMenuCommand(`${keyboardShortcutsSymbol} Bật/Tắt Phím Chức Năng`, () => {
+            isKeyboardShortcutsEnabled = !isKeyboardShortcutsEnabled;
+            GM_setValue('isKeyboardShortcutsEnabled', isKeyboardShortcutsEnabled);
+            showNotification(`Phím Chức Năng đã ${isKeyboardShortcutsEnabled ? 'bật' : 'tắt'}`);
+            registerMenuCommands(); // Cập nhật menu
+        });
     }
 
     registerMenuCommands(); // Đăng ký menu ban đầu
 
     // Mở khóa chuột phải
-    if (isDevToolsDetectionBypassed) {
+    if (isRightClickEnabled) {
         document.addEventListener('contextmenu', function(event) {
             event.stopPropagation(); // Ngăn chặn hành động mặc định
         }, true);
     }
 
     // Mở khóa phím tắt
-    if (isDevToolsDetectionBypassed) {
+    if (isKeyboardShortcutsEnabled) {
         document.addEventListener('keydown', function(event) {
             const allowedKeys = [123, 73, 74, 67, 85, 83, 80, 65, 67, 86]; // F12, Ctrl+Shift+I, Ctrl+Shift+J, ...
             if (allowedKeys.includes(event.keyCode)) {
