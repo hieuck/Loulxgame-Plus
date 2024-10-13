@@ -163,34 +163,42 @@
             }
         });
     }
+  
+    // Hàm kiểm tra xem người dùng đã điểm danh hay chưa
+    function hasCheckedIn() {
+        const checkinMessage = document.querySelector('.checkin-details-link'); // Thay thế bằng lớp thực tế
+        return checkinMessage && checkinMessage.textContent.includes('Hôm nay đã điểm danh');
+    }
 
-    // Hàm tự động điểm danh
-        function autoCheckIn() {
-            if (!isAutoCheckInEnabled) return; // Nếu tự động điểm danh bị tắt, thoát
+    // Hàm kiểm tra xem người dùng đã đăng nhập hay chưa
+    function isLoggedIn() {
+        const userElement = document.querySelector('.display-name'); // Lớp chứa tên hiển thị của người dùng
+        return userElement !== null; // Kiểm tra xem phần tử có tồn tại không
+    }
 
-            const checkInButton = document.querySelector('a.initiate-checkin');
-
-            if (checkInButton && checkInButton.innerHTML.includes("Đã điểm danh")) {
-                showNotification('Đã điểm danh hôm nay. Dừng lại.');
-                return; // Dừng lại nếu đã điểm danh
-            }
-
-            if (checkInButton) {
-                checkInButton.click();
-                showNotification('Đã điểm danh tự động!');
-            } else {
-                showNotification('Đã điểm danh.');
-            }
+    // Đợi cho đến khi trang được tải hoàn toàn
+    window.addEventListener('load', function() {
+        // Kiểm tra xem đã điểm danh hay chưa
+        if (hasCheckedIn()) {
+            showNotification('Người dùng đã điểm danh.');
+            return; // Dừng lại nếu đã điểm danh
         }
 
-        // Chờ trang tải xong trước khi điểm danh
-        window.addEventListener('load', function() {
-            if (window.location.href === 'https://loulxgame.com/') {
-                setTimeout(autoCheckIn, 1000); // Tự động điểm danh sau 1 giây
-            }
-        });
+        // Kiểm tra xem người dùng đã đăng nhập hay chưa
+        if (!isLoggedIn()) {
+            showNotification('Người dùng chưa đăng nhập.');
+            return; // Dừng lại nếu chưa đăng nhập
+        }
 
-    // Đặt khoảng thời gian để tự động điểm danh mỗi 24 giờ (86400000 ms)
-    setInterval(autoCheckIn, 86400000); // Tự động điểm danh mỗi 24 giờ
+        // Chọn nút "Điểm danh"
+        const checkInButton = document.querySelector('a.initiate-checkin');
 
+        // Nhấp vào nút nếu tồn tại
+        if (checkInButton) {
+            checkInButton.click(); // Nhấp vào nút
+            showNotification('Nút điểm danh đã được nhấn');
+        } else {
+            showNotification('Không tìm thấy nút điểm danh');
+        }
+    });
 })();
