@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bypass DevTools Detection, Unlock Functionality, and Auto Check-in
 // @namespace    http://tampermonkey.net/
-// @version      1.7
+// @version      1.9
 // @description  Bỏ qua phát hiện DevTools, mở khóa các chức năng và tự động điểm danh trên https://loulxgame.com/
 // @author       hieuck
 // @match        https://loulxgame.com/*
@@ -21,11 +21,24 @@
     let isDevToolsDetectionBypassed = GM_getValue('isDevToolsDetectionBypassed', true);
     let isAutoCheckInEnabled = GM_getValue('isAutoCheckInEnabled', true);
     let isRightClickEnabled = GM_getValue('isRightClickEnabled', true);
+    let isAbsoluteRightClickEnabled = GM_getValue('isAbsoluteRightClickEnabled', true);
     let isKeyboardShortcutsEnabled = GM_getValue('isKeyboardShortcutsEnabled', true);
 
-    // Hàm thông báo
+    // Hàm hiển thị thông báo
     function showNotification(message) {
-        console.log(message); // Hiển thị thông báo trên console
+        const notification = document.createElement('div');
+        notification.innerHTML = message;
+        notification.style.position = 'fixed';
+        notification.style.bottom = '20px';
+        notification.style.right = '20px';
+        notification.style.backgroundColor = 'black';
+        notification.style.color = 'white';
+        notification.style.padding = '10px';
+        notification.style.zIndex = '1000';
+        document.body.appendChild(notification);
+        setTimeout(() => {
+            notification.remove();
+        }, 2000);
     }
 
     const menu = {
@@ -51,12 +64,12 @@
                 this.register(); // Cập nhật menu
             }));
 
-            this.ids.push(GM_registerMenuCommand(`${isRightClickEnabled ? '✔️' : '❌'} Bật/Tắt Chuột Phải`, () => {
-                isRightClickEnabled = !isRightClickEnabled;
-                GM_setValue('isRightClickEnabled', isRightClickEnabled);
-                showNotification(`Chuột Phải đã ${isRightClickEnabled ? 'bật' : 'tắt'}`);
+            this.ids.push(GM_registerMenuCommand(`${isAbsoluteRightClickEnabled ? '✔️' : '❌'} Bật/Tắt Chuột Phải Tuyệt Đối`, () => {
+                isAbsoluteRightClickEnabled = !isAbsoluteRightClickEnabled; // Toggle trạng thái
+                GM_setValue('isAbsoluteRightClickEnabled', isAbsoluteRightClickEnabled); // Lưu trạng thái
+                showNotification(`Chế độ Chuột Phải Tuyệt Đối đã ${isAbsoluteRightClickEnabled ? 'bật' : 'tắt'}`); // Thông báo người dùng
                 this.register(); // Cập nhật menu
-                location.reload();
+                location.reload(); // Tải lại trang để áp dụng thay đổi
             }));
 
             this.ids.push(GM_registerMenuCommand(`${isKeyboardShortcutsEnabled ? '✔️' : '❌'} Bật/Tắt Phím Chức Năng`, () => {
@@ -75,7 +88,52 @@
     if (isRightClickEnabled) {
         document.addEventListener('contextmenu', function(event) {
             event.stopPropagation(); // Ngăn chặn hành động mặc định
+            event.preventDefault(); // Bổ sung để ngăn hoàn toàn việc hiển thị menu mặc định
         }, true);
+    }
+
+    // Chế độ Chuột Phải Tuyệt Đối
+    function enableAbsoluteRightClickMode() {
+        const css = document.createElement('style');
+        css.type = 'text/css';
+        css.innerText = `* {
+            -webkit-user-select: text !important;
+            -moz-user-select: text !important;
+            -ms-user-select: text !important;
+            user-select: text !important;
+        }`;
+        document.head.appendChild(css);
+
+        const eventsToDisable = [
+            'contextmenu', 'selectstart', 'dragstart', 'mousedown', 'cut', 'copy', 'paste'
+        ];
+
+        eventsToDisable.forEach(event => {
+            document.addEventListener(event, function(e) {
+                e.stopPropagation();
+            }, true);
+        });
+
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === '`') { // Ctrl + `
+                if (confirm('Activate Absolute Right Click Mode!')) {
+                    enableAbsoluteRightClick();
+                }
+            }
+        });
+
+        function enableAbsoluteRightClick() {
+            eventsToDisable.forEach(event => {
+                document.addEventListener(event, function(e) {
+                    e.stopPropagation();
+                }, true);
+            });
+        }
+    }
+
+    // Kiểm tra trạng thái chế độ chuột phải tuyệt đối
+    if (isAbsoluteRightClickEnabled) {
+        enableAbsoluteRightClickMode();
     }
 
     // Bỏ qua hạn chế phím tắt
@@ -98,104 +156,41 @@
 
             // Kiểm tra nếu phím được nhấn là một trong các phím bị vô hiệu hóa
             for (const key of disabledKeys) {
-                let disable = true;
-                for (const prop in key) {
-                    if (event[prop] !== key[prop]) {
-                        disable = false;
-                        break;
-                    }
-                }
-                if (disable) {
+                if (Object.keys(key).every(prop => event[prop] === key[prop])) {
                     event.stopPropagation(); // Ngăn chặn hành động mặc định
-                    return false; // Ngăn chặn hành động mặc định của trình duyệt
+                    return true; // Trả về true để cho phép phím tắt
                 }
             }
-        }, true);
+        });
     }
-
-    // Khôi phục khả năng sao chép, dán và cắt
-    document.addEventListener('copy', event => {
-        event.stopPropagation(); // Ngăn chặn hành động mặc định
-    });
-
-    document.addEventListener('cut', event => {
-        event.stopPropagation(); // Ngăn chặn hành động mặc định
-    });
-
-    document.addEventListener('paste', event => {
-        event.stopPropagation(); // Ngăn chặn hành động mặc định
-    });
-
-    // Ghi đè hàm debugger
-    if (isDevToolsDetectionBypassed) {
-        window.debugger = function() {
-            // Không làm gì khi gọi debugger
-        };
-    }
-
-    // Ngăn chặn phát hiện DevTools
-    (function() {
-        if (!isDevToolsDetectionBypassed) return; // Nếu chức năng bỏ qua bị tắt, thoát
-
-        let callbacks = [];
-        let timeLimit = 50;
-        let open = false;
-
-        function loop() {
-            const startTime = new Date();
-            debugger; // Triggers if dev tools are opened
-
-            if (new Date() - startTime > timeLimit) {
-                if (!open) {
-                    callbacks.forEach(function(fn) {
-                        fn.call(null);
-                    });
-                }
-                open = true;
-                console.log('Phát hiện DevTools, nhưng đã được xử lý.');
-            } else {
-                open = false;
-            }
-        }
-
-        setInterval(loop, 100); // Kiểm tra mỗi 100ms
-
-        // Phương thức thêm listener
-        window.addListener = function(fn) {
-            callbacks.push(fn);
-        };
-
-        // Phương thức xóa listener
-        window.cancelListener = function(fn) {
-            callbacks = callbacks.filter(function(v) {
-                return v !== fn;
-            });
-        };
-    })();
 
     // Hàm tự động điểm danh
-    function autoCheckIn() {
-        if (!isAutoCheckInEnabled) return; // Nếu tự động điểm danh bị tắt, thoát
+        function autoCheckIn() {
+            if (!isAutoCheckInEnabled) return; // Nếu tự động điểm danh bị tắt, thoát
 
-        const checkInButton = document.querySelector('.checkin-details-link');
+            const checkInButton = document.querySelector('a.initiate-checkin');
 
-        if (checkInButton && checkInButton.innerHTML.includes("Đã điểm danh")) {
-            console.log('Đã điểm danh hôm nay. Dừng lại.');
-            return; // Dừng lại nếu đã điểm danh
+            if (checkInButton && checkInButton.innerHTML.includes("Đã điểm danh")) {
+                showNotification('Đã điểm danh hôm nay. Dừng lại.');
+                return; // Dừng lại nếu đã điểm danh
+            }
+
+            if (checkInButton) {
+                checkInButton.click();
+                showNotification('Đã điểm danh tự động!');
+            } else {
+                showNotification('Đã điểm danh.');
+            }
         }
 
-        if (checkInButton) {
-            checkInButton.click();
-            console.log('Đã điểm danh tự động!');
-        } else {
-            console.log('Nút điểm danh không tìm thấy.');
-        }
-    }
+        // Chờ trang tải xong trước khi điểm danh
+        window.addEventListener('load', function() {
+            if (window.location.href === 'https://loulxgame.com/') {
+                setTimeout(autoCheckIn, 1000); // Tự động điểm danh sau 1 giây
+            }
+        });
 
-    // Chờ trang tải xong trước khi điểm danh
-    window.addEventListener('load', function() {
-        if (window.location.href === 'https://loulxgame.com/') {
-            setTimeout(autoCheckIn, 1000); // Tự động điểm danh sau 1 giây
-        }
-    });
+    // Đặt khoảng thời gian để tự động điểm danh mỗi 24 giờ (86400000 ms)
+    setInterval(autoCheckIn, 86400000); // Tự động điểm danh mỗi 24 giờ
+
 })();
